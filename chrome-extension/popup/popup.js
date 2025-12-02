@@ -1,0 +1,235 @@
+// API Configuration
+const API_URL = 'https://pfc-api-service-xyz-uc.a.run.app/v1'; // Will be replaced with real URL
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize UI
+    const views = {
+        loading: document.getElementById('loading-view'),
+        empty: document.getElementById('empty-view'),
+        results: document.getElementById('results-view'),
+        error: document.getElementById('error-view')
+    };
+
+    // Check system status
+    checkSystemStatus();
+
+    // Load cached data first
+    const cached = await chrome.storage.local.get(['portfolioData', 'lastForecast']);
+
+    if (cached.lastForecast && isFresh(cached.lastForecast.generatedAt)) {
+        showResults(cached.lastForecast);
+    } else if (cached.portfolioData) {
+        fetchForecast(cached.portfolioData.tickers, cached.portfolioData.portfolio);
+    } else {
+        // Try to scan current tab
+        scanCurrentTab();
+    }
+
+    // Event Listeners
+    document.getElementById('btn-scan').addEventListener('click', scanCurrentTab);
+    document.getElementById('btn-retry').addEventListener('click', scanCurrentTab);
+
+    document.getElementById('btn-add').addEventListener('click', () => {
+        const input = document.getElementById('manual-ticker');
+        const ticker = input.value.trim().toUpperCase();
+        if (ticker) {
+            fetchForecast([ticker]);
+            input.value = '';
+        }
+    });
+});
+
+async function scanCurrentTab() {
+    showView('loading');
+
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+        if (!tab) throw new Error('No active tab');
+
+        // Send message to content script
+        chrome.tabs.sendMessage(tab.id, { action: 'extractTickers' }, (response) => {
+            if (chrome.runtime.lastError) {
+                // Content script might not be loaded (e.g. restricted page)
+                showView('empty');
+                return;
+            }
+
+            if (response && response.tickers && response.tickers.length > 0) {
+                fetchForecast(response.tickers, response.portfolio);
+            } else {
+                showView('empty');
+            }
+        });
+    } catch (err) {
+        console.error('Scan failed:', err);
+        showView('empty');
+    }
+}
+
+async function fetchForecast(tickers, portfolio = []) {
+    showView('loading');
+
+    try {
+        // Call Go API
+        const response = await fetch(`${API_URL}/forecast`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tickers, portfolio })
+        });
+
+        if (!response.ok) throw new Error('API request failed');
+
+        const data = await response.json();
+
+        // Cache result
+        chrome.storage.local.set({ lastForecast: data });
+
+        showResults(data);
+    } catch (err) {
+        console.error('Forecast failed:', err);
+        document.getElementById('error-message').textContent = 'Failed to generate forecast. Please try again.';
+        showView('error');
+    }
+}
+
+function showResults(data) {
+    showView('results');
+
+    // Update Summary
+    document.getElementById('current-value').textContent = formatCurrency(data.currentValue);
+    document.getElementById('expected-value').textContent = formatCurrency(data.expectedValue);
+
+    const riskBadge = document.getElementById('risk-level');
+    riskBadge.textContent = data.risk.toUpperCase();
+    riskBadge.className = `value risk-badge risk-${data.risk}`;
+
+    // Render Chart
+    renderChart(data);
+
+    // Render Tickers List
+    const list = document.getElementById('tickers-list');
+    list.innerHTML = '';
+
+    data.tickers.forEach(ticker => {
+        const el = document.createElement('div');
+        el.className = 'ticker-item';
+
+        const change = ((ticker.forecast.p50 - ticker.currentPrice) / ticker.currentPrice) * 100;
+        const changeClass = change >= 0 ? 'positive' : 'negative';
+
+        el.innerHTML = `
+            <div class="ticker-info">
+                <span class="ticker-symbol">${ticker.symbol}</span>
+                <span class="ticker-price">${formatCurrency(ticker.currentPrice)}</span>
+            </div>
+            <div class="ticker-forecast">
+                <div class="forecast-change ${changeClass}">
+                    ${change >= 0 ? '+' : ''}${change.toFixed(2)}%
+                </div>
+                <div class="label">Exp. ${formatCurrency(ticker.forecast.p50)}</div>
+            </div>
+        `;
+        list.appendChild(el);
+    });
+
+    document.getElementById('last-updated').textContent = `Updated: ${new Date(data.generatedAt).toLocaleTimeString()}`;
+}
+
+let chartInstance = null;
+
+function renderChart(data) {
+    const ctx = document.getElementById('forecast-chart').getContext('2d');
+
+    if (chartInstance) chartInstance.destroy();
+
+    // Generate hourly labels
+    const labels = Array.from({ length: 24 }, (_, i) => `${i + 1}h`);
+
+    // Create datasets from simulation paths (simplified for visualization)
+    // In a real app, we'd pass the full path data
+    const currentVal = data.currentValue || 100; // Normalize to 100 if no portfolio value
+
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Expected',
+                data: generatePath(currentVal, data.expectedValue),
+                borderColor: '#2563eb',
+                borderWidth: 2,
+                tension: 0.4,
+                pointRadius: 0
+            }, {
+                label: 'Best Case (95%)',
+                data: generatePath(currentVal, data.percentiles.p95),
+                borderColor: '#22c55e',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                tension: 0.4,
+                pointRadius: 0
+            }, {
+                label: 'Worst Case (5%)',
+                data: generatePath(currentVal, data.percentiles.p5),
+                borderColor: '#ef4444',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                tension: 0.4,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { display: false },
+                y: {
+                    display: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#94a3b8' }
+                }
+            }
+        }
+    });
+}
+
+// Helper: Generate a smooth path between start and end (linear interpolation for demo)
+function generatePath(start, end) {
+    const points = [];
+    for (let i = 0; i <= 24; i++) {
+        points.push(start + (end - start) * (i / 24));
+    }
+    return points;
+}
+
+function showView(viewName) {
+    document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
+    document.getElementById(`${viewName}-view`).classList.remove('hidden');
+}
+
+function formatCurrency(val) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    }).format(val);
+}
+
+function isFresh(timestamp) {
+    return (new Date() - new Date(timestamp)) < 1000 * 60 * 60; // 1 hour freshness
+}
+
+async function checkSystemStatus() {
+    try {
+        const res = await fetch(`${API_URL}/health`);
+        if (res.ok) {
+            document.getElementById('status-indicator').classList.add('online');
+        }
+    } catch (e) {
+        // Offline
+    }
+}

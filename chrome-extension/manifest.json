@@ -1,0 +1,57 @@
+{
+    "manifest_version": 3,
+    "name": "PFC - Portfolio Forecast",
+    "version": "1.1.0",
+    "description": "Your portfolio stress busting companion - Real-time 24-hour forecasting with AI-powered risk analysis",
+    "permissions": [
+        "activeTab",
+        "storage"
+    ],
+    "host_permissions": [
+        "https://robinhood.com/*",
+        "https://www.robinhood.com/*",
+        "https://webull.com/*",
+        "https://www.webull.com/*",
+        "https://www.tdameritrade.com/*",
+        "https://us.etrade.com/*",
+        "https://www.fidelity.com/*",
+        "https://www.schwab.com/*"
+    ],
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_icon": {
+            "16": "assets/icon16.png",
+            "48": "assets/icon48.png",
+            "128": "assets/icon128.png"
+        }
+    },
+    "icons": {
+        "16": "assets/icon16.png",
+        "48": "assets/icon48.png",
+        "128": "assets/icon128.png"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://robinhood.com/*",
+                "https://www.robinhood.com/*",
+                "https://webull.com/*",
+                "https://www.webull.com/*",
+                "https://www.tdameritrade.com/*",
+                "https://us.etrade.com/*",
+                "https://www.fidelity.com/*",
+                "https://www.schwab.com/*"
+            ],
+            "js": [
+                "content/content.js"
+            ],
+            "css": [
+                "content/content.css"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "background": {
+        "service_worker": "background/service-worker.js"
+    }
+}

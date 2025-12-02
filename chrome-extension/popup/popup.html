@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PFC - Portfolio Forecast</title>
+    <link rel="stylesheet" href="popup.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <img src="../assets/icon48.png" alt="PFC Logo" id="logo-img">
+                <h1>PFC Forecast</h1>
+            </div>
+            <div class="status-indicator" id="status-indicator" title="System Status"></div>
+        </header>
+
+        <main>
+            <div id="loading-view" class="view hidden">
+                <div class="spinner"></div>
+                <p>Analyzing Portfolio...</p>
+            </div>
+
+            <div id="empty-view" class="view hidden">
+                <div class="empty-state">
+                    <p>No tickers detected.</p>
+                    <button id="btn-scan" class="btn primary">Scan Page</button>
+                    <div class="manual-input">
+                        <input type="text" id="manual-ticker" placeholder="Enter symbol (e.g. AAPL)">
+                        <button id="btn-add" class="btn secondary">Add</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-view" class="view">
+                <div class="portfolio-summary">
+                    <div class="metric">
+                        <span class="label">Current Value</span>
+                        <span class="value" id="current-value">$0.00</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">24h Forecast</span>
+                        <span class="value" id="expected-value">$0.00</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Risk Level</span>
+                        <span class="value risk-badge" id="risk-level">Analyzing...</span>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="forecast-chart"></canvas>
+                </div>
+
+                <div class="tickers-list" id="tickers-list">
+                    <!-- Ticker items will be injected here -->
+                </div>
+            </div>
+
+            <div id="error-view" class="view hidden">
+                <div class="error-state">
+                    <p id="error-message">Something went wrong.</p>
+                    <button id="btn-retry" class="btn primary">Retry</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <span id="last-updated">Updated: Just now</span>
+            <a href="#" id="settings-link">Settings</a>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
