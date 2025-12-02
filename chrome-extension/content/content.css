@@ -1,0 +1,9 @@
+/* PFC Content Script Styles */
+
+/* Highlight detected tickers (optional visual indicator) */
+.pfc-highlight {
+    border-bottom: 2px solid #2563eb;
+    cursor: help;
+}
+
+/* Tooltip or overlay styles could go here */

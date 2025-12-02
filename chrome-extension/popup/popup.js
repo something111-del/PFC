@@ -1,5 +1,5 @@
 // API Configuration
-const API_URL = 'https://pfc-api-service-xyz-uc.a.run.app/v1'; // Will be replaced with real URL
+const API_URL = 'https://pfc-go-api-z6xxcgcfla-uc.a.run.app/v1';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize UI
