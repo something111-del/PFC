@@ -5,7 +5,8 @@
     "description": "Your portfolio stress busting companion - Real-time 24-hour forecasting with AI-powered risk analysis",
     "permissions": [
         "activeTab",
-        "storage"
+        "storage",
+        "alarms"
     ],
     "host_permissions": [
         "https://robinhood.com/*",
