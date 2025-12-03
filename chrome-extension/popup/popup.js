@@ -151,9 +151,12 @@ function showResults(data) {
         // Sum up all tickers' current prices (assume 1 share each for visualization)
         displayCurrentValue = data.tickers.reduce((sum, t) => sum + t.currentPrice, 0);
 
-        // Use p95 (best case) as the expected value to show optimistic forecast
-        // This avoids showing 0% change and gives users a meaningful prediction
-        displayExpectedValue = data.tickers.reduce((sum, t) => sum + t.forecast.p95, 0);
+        // Smart expected value: use p5 for high volatility, p95 for low volatility
+        displayExpectedValue = data.tickers.reduce((sum, t) => {
+            // Volatility threshold: 15% (0.15)
+            const isHighVolatility = t.volatility > 0.15;
+            return sum + (isHighVolatility ? t.forecast.p5 : t.forecast.p95);
+        }, 0);
 
         displayPercentiles = {
             p5: data.tickers.reduce((sum, t) => sum + t.forecast.p5, 0),
@@ -192,8 +195,11 @@ function showResults(data) {
         // Use ticker current price if available, otherwise fallback
         const price = ticker.currentPrice > 0 ? ticker.currentPrice : displayCurrentValue;
 
-        // Use p95 (best case) as expected value to show meaningful change
-        const expectedPrice = ticker.forecast.p95;
+        // Smart expected value based on volatility
+        // High volatility (>15%): show downside risk (p5)
+        // Low volatility (<=15%): show upside potential (p95)
+        const isHighVolatility = ticker.volatility > 0.15;
+        const expectedPrice = isHighVolatility ? ticker.forecast.p5 : ticker.forecast.p95;
         const change = ((expectedPrice - price) / price) * 100;
         const changeClass = change >= 0 ? 'positive' : 'negative';
 
