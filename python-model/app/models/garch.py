@@ -52,8 +52,8 @@ class GARCHModel:
             # Convert back to decimal and annualize
             volatility_annual = (volatility / 100) * np.sqrt(252)
             
-            # Apply minimum volatility floor of 5% and maximum of 100%
-            volatility_annual = np.clip(volatility_annual, 0.05, 1.0)
+            # Apply minimum volatility floor of 2% and maximum of 100%
+            volatility_annual = np.clip(volatility_annual, 0.02, 1.0)
             
             logger.info(f"GARCH volatility estimated: {volatility_annual:.4f}")
             return volatility_annual

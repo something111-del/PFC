@@ -148,11 +148,11 @@ class ForecastService:
             symbol=ticker,
             currentPrice=current_price,
             forecast=Percentiles(
-                p5=current_price * 0.98,
+                p5=current_price * 0.975,  # -2.5%
                 p50=current_price,
-                p95=current_price * 1.02
+                p95=current_price * 1.025  # +2.5%
             ),
-            volatility=0.15,  # Default 15% volatility
+            volatility=0.20,  # Default 20% volatility
             risk="yellow"
         )
     
