@@ -177,6 +177,39 @@ function extractTickers() {
     return result;
 }
 
+// Function to extract tickers and send to background script for badge update
+function updateCache() {
+    const data = extractTickers();
+    // Send to background to update badge
+    chrome.runtime.sendMessage({ type: 'PORTFOLIO_DETECTED', data: data }).catch(() => {
+        // Ignore errors if background script is sleeping
+    });
+}
+
+// Update cache when page loads and on changes
+if (document.readyState === 'complete') {
+    updateCache();
+} else {
+    window.addEventListener('load', updateCache);
+    document.addEventListener('DOMContentLoaded', updateCache);
+}
+
+// Watch for DOM changes (portfolio updates)
+const observer = new MutationObserver((mutations) => {
+    // Debounce updates to avoid excessive processing
+    if (window.updateTimeout) clearTimeout(window.updateTimeout);
+    window.updateTimeout = setTimeout(updateCache, 1000);
+});
+
+observer.observe(document.body, {
+    childList: true,
+    subtree: true
+});
+
+// Periodic scan to catch delayed loading (e.g. SPAs)
+// This ensures we catch tickers even if DOM mutations are subtle
+setInterval(updateCache, 3000);
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'extractTickers') {
