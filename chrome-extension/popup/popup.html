@@ -30,8 +30,9 @@
                     <p>No tickers detected.</p>
                     <button id="btn-scan" class="btn primary">Scan Page</button>
                     <div class="manual-input">
-                        <input type="text" id="manual-ticker" placeholder="Enter symbol (e.g. AAPL)">
+                        <input type="text" id="manual-ticker" placeholder="Enter symbols (e.g. AAPL TSLA NVDA)">
                         <button id="btn-add" class="btn secondary">Add</button>
+                        <button id="btn-clear" class="btn tertiary">Clear</button>
                     </div>
                 </div>
             </div>
@@ -71,7 +72,10 @@
 
         <footer>
             <span id="last-updated">Updated: Just now</span>
-            <a href="#" id="settings-link">Settings</a>
+            <div class="footer-actions">
+                <button id="btn-new-forecast" class="btn-link">New Forecast</button>
+                <a href="#" id="settings-link">Settings</a>
+            </div>
         </footer>
     </div>
     <script src="popup.js"></script>

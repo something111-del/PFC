@@ -121,9 +121,20 @@ header {
     text-transform: uppercase;
 }
 
-.risk-green { background-color: rgba(34, 197, 94, 0.2); color: var(--success); }
-.risk-yellow { background-color: rgba(234, 179, 8, 0.2); color: var(--warning); }
-.risk-red { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); }
+.risk-green {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: var(--success);
+}
+
+.risk-yellow {
+    background-color: rgba(234, 179, 8, 0.2);
+    color: var(--warning);
+}
+
+.risk-red {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: var(--danger);
+}
 
 /* Chart */
 .chart-container {
@@ -179,8 +190,13 @@ header {
     font-size: 14px;
 }
 
-.positive { color: var(--success); }
-.negative { color: var(--danger); }
+.positive {
+    color: var(--success);
+}
+
+.negative {
+    color: var(--danger);
+}
 
 /* Buttons & Inputs */
 .btn {
@@ -192,7 +208,9 @@ header {
     transition: opacity 0.2s;
 }
 
-.btn:hover { opacity: 0.9; }
+.btn:hover {
+    opacity: 0.9;
+}
 
 .primary {
     background-color: var(--primary-color);
@@ -231,10 +249,14 @@ input {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-#loading-view, #empty-view, #error-view {
+#loading-view,
+#empty-view,
+#error-view {
     justify-content: center;
     align-items: center;
     text-align: center;
@@ -245,6 +267,7 @@ input {
 footer {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 11px;
     color: var(--text-secondary);
     margin-top: 16px;
@@ -252,4 +275,31 @@ footer {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-a { color: var(--primary-color); text-decoration: none; }
+.footer-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.btn-link:hover {
+    opacity: 0.8;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}

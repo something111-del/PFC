@@ -53,13 +53,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('btn-add').addEventListener('click', () => {
         const input = document.getElementById('manual-ticker');
-        const ticker = input.value.trim().toUpperCase();
-        if (ticker) {
+        const tickerInput = input.value.trim().toUpperCase();
+        if (tickerInput) {
             chrome.storage.local.remove(['lastForecast']); // Clear cache for new ticker
-            fetchForecast([ticker]);
+            // Support space-separated tickers (e.g., "AAPL INTC TSLA")
+            const tickers = tickerInput.split(/[\s,]+/).filter(t => t.length > 0).slice(0, 10);
+            fetchForecast(tickers);
             input.value = '';
         }
     });
+
+    // Add "New Forecast" button listener (if it exists in results view)
+    const newForecastBtn = document.getElementById('btn-new-forecast');
+    if (newForecastBtn) {
+        newForecastBtn.addEventListener('click', () => {
+            chrome.storage.local.remove(['lastForecast', 'portfolioData']);
+            showView('empty');
+        });
+    }
 });
 
 async function scanCurrentTab() {

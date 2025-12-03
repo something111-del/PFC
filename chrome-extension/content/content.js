@@ -84,6 +84,7 @@ function extractTickers() {
         }
     }
 
+    // Strategy 2: Scan using platform-specific selectors
     if (platform) {
         console.log(`[PFC] Scanning DOM for platform: ${platform.name}`);
         const tickerElements = document.querySelectorAll(platform.tickerSelector);
@@ -115,20 +116,61 @@ function extractTickers() {
         });
     }
 
+    // Strategy 3: Aggressive table scanning (for watchlists, portfolios)
+    const tables = document.querySelectorAll('table');
+    tables.forEach(table => {
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td, th');
+            cells.forEach(cell => {
+                const text = cell.textContent.trim().toUpperCase();
+                // Look for ticker patterns (1-5 uppercase letters, standalone)
+                const matches = text.match(/\b([A-Z]{1,5})\b/g);
+                if (matches) {
+                    matches.forEach(match => {
+                        // Validate it's likely a ticker (not a word like "PRICE" or "NAME")
+                        const commonWords = ['PRICE', 'NAME', 'CHANGE', 'VOLUME', 'VALUE', 'TOTAL', 'SYMBOL'];
+                        if (!commonWords.includes(match) && /^[A-Z]{1,5}$/.test(match)) {
+                            tickers.add(match);
+                        }
+                    });
+                }
+            });
+        });
+    });
+
+    // Strategy 4: Scan all text nodes for ticker patterns (last resort)
+    if (tickers.size === 0) {
+        const bodyText = document.body.innerText;
+        const matches = bodyText.match(/\b([A-Z]{2,5})\b/g);
+        if (matches) {
+            const uniqueMatches = [...new Set(matches)].slice(0, 20); // Limit to first 20 unique
+            uniqueMatches.forEach(match => {
+                const commonWords = ['THE', 'AND', 'FOR', 'ARE', 'THIS', 'THAT', 'WITH', 'FROM', 'HAVE', 'BEEN', 'PRICE', 'NAME', 'CHANGE', 'VOLUME', 'VALUE', 'TOTAL', 'SYMBOL', 'TABLE', 'VIEW', 'HEAT', 'MAP'];
+                if (!commonWords.includes(match) && /^[A-Z]{2,5}$/.test(match)) {
+                    tickers.add(match);
+                }
+            });
+        }
+    }
+
     // If we have a URL ticker but no portfolio shares, assume 1 share for visualization
     if (urlTicker && portfolio.length === 0 && detectedPrice > 0) {
         portfolio.push({
             ticker: urlTicker,
             shares: 1,
-            price: detectedPrice // Pass this to popup
+            price: detectedPrice
         });
     }
 
+    // Limit to 10 tickers maximum
+    const tickerArray = Array.from(tickers).slice(0, 10);
+
     const result = {
         platform: platform ? platform.name : 'Unknown',
-        tickers: Array.from(tickers),
+        tickers: tickerArray,
         portfolio: portfolio.length > 0 ? portfolio : null,
-        currentPrice: detectedPrice // Send detected price to popup
+        currentPrice: detectedPrice
     };
 
     console.log('[PFC] Extracted data:', result);
