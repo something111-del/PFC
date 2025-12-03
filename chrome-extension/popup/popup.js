@@ -108,16 +108,37 @@ async function fetchForecast(tickers, portfolio = [], currentPrice = 0) {
 function showResults(data) {
     showView('results');
 
+    // If no portfolio (currentValue is 0), use the first ticker's data for display
+    let displayCurrentValue = data.currentValue;
+    let displayExpectedValue = data.expectedValue;
+    let displayPercentiles = data.percentiles;
+
+    if (displayCurrentValue === 0 && data.tickers && data.tickers.length > 0) {
+        // Sum up all tickers' current prices (assume 1 share each for visualization)
+        displayCurrentValue = data.tickers.reduce((sum, t) => sum + t.currentPrice, 0);
+        displayExpectedValue = data.tickers.reduce((sum, t) => sum + t.forecast.p50, 0);
+        displayPercentiles = {
+            p5: data.tickers.reduce((sum, t) => sum + t.forecast.p5, 0),
+            p50: data.tickers.reduce((sum, t) => sum + t.forecast.p50, 0),
+            p95: data.tickers.reduce((sum, t) => sum + t.forecast.p95, 0)
+        };
+    }
+
     // Update Summary
-    document.getElementById('current-value').textContent = formatCurrency(data.currentValue);
-    document.getElementById('expected-value').textContent = formatCurrency(data.expectedValue);
+    document.getElementById('current-value').textContent = formatCurrency(displayCurrentValue);
+    document.getElementById('expected-value').textContent = formatCurrency(displayExpectedValue);
 
     const riskBadge = document.getElementById('risk-level');
     riskBadge.textContent = data.risk.toUpperCase();
     riskBadge.className = `value risk-badge risk-${data.risk}`;
 
-    // Render Chart
-    renderChart(data);
+    // Render Chart with corrected values
+    renderChart({
+        ...data,
+        currentValue: displayCurrentValue,
+        expectedValue: displayExpectedValue,
+        percentiles: displayPercentiles
+    });
 
     // Render Tickers List
     const list = document.getElementById('tickers-list');
@@ -128,7 +149,7 @@ function showResults(data) {
         el.className = 'ticker-item';
 
         // Use ticker current price if available, otherwise fallback
-        const price = ticker.currentPrice > 0 ? ticker.currentPrice : data.currentValue;
+        const price = ticker.currentPrice > 0 ? ticker.currentPrice : displayCurrentValue;
 
         const change = ((ticker.forecast.p50 - price) / price) * 100;
         const changeClass = change >= 0 ? 'positive' : 'negative';
