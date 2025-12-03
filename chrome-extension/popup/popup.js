@@ -13,8 +13,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check system status
     checkSystemStatus();
 
-    // Load cached data first
-    const cached = await chrome.storage.local.get(['portfolioData', 'lastForecast']);
+    // Get current tab URL to detect if we're on a new stock page
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const currentUrl = tab?.url || '';
+
+    // Load cached data
+    const cached = await chrome.storage.local.get(['portfolioData', 'lastForecast', 'lastUrl']);
+
+    // Clear cache if URL changed (navigated to different stock)
+    if (cached.lastUrl && cached.lastUrl !== currentUrl) {
+        console.log('[PFC] URL changed, clearing cache');
+        await chrome.storage.local.remove(['lastForecast', 'portfolioData']);
+        cached.lastForecast = null;
+        cached.portfolioData = null;
+    }
+
+    // Store current URL
+    chrome.storage.local.set({ lastUrl: currentUrl });
 
     if (cached.lastForecast && isFresh(cached.lastForecast.generatedAt)) {
         showResults(cached.lastForecast);
@@ -26,13 +41,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Event Listeners
-    document.getElementById('btn-scan').addEventListener('click', scanCurrentTab);
-    document.getElementById('btn-retry').addEventListener('click', scanCurrentTab);
+    document.getElementById('btn-scan').addEventListener('click', () => {
+        chrome.storage.local.remove(['lastForecast']); // Clear cache on manual scan
+        scanCurrentTab();
+    });
+
+    document.getElementById('btn-retry').addEventListener('click', () => {
+        chrome.storage.local.remove(['lastForecast']); // Clear cache on retry
+        scanCurrentTab();
+    });
 
     document.getElementById('btn-add').addEventListener('click', () => {
         const input = document.getElementById('manual-ticker');
         const ticker = input.value.trim().toUpperCase();
         if (ticker) {
+            chrome.storage.local.remove(['lastForecast']); // Clear cache for new ticker
             fetchForecast([ticker]);
             input.value = '';
         }
