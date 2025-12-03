@@ -21,6 +21,7 @@ class ForecastService:
     def generate_forecast(
         self,
         tickers: List[str],
+        current_prices: Dict[str, float],
         historical_data: Dict[str, List[float]]
     ) -> dict:
         """
@@ -28,6 +29,7 @@ class ForecastService:
         
         Args:
             tickers: List of ticker symbols
+            current_prices: Dictionary mapping ticker to current price
             historical_data: Dictionary mapping ticker to historical prices
             
         Returns:
@@ -38,13 +40,19 @@ class ForecastService:
         
         for ticker in tickers:
             try:
-                forecast = self._forecast_single_ticker(ticker, historical_data.get(ticker, []))
+                current_price = current_prices.get(ticker, 0.0)
+                forecast = self._forecast_single_ticker(
+                    ticker, 
+                    current_price,
+                    historical_data.get(ticker, [])
+                )
                 forecasts.append(forecast)
                 risk_scores.append(self._risk_to_score(forecast.risk))
             except Exception as e:
                 logger.error(f"Failed to forecast {ticker}: {str(e)}")
-                # Add a default forecast
-                forecasts.append(self._default_forecast(ticker))
+                # Add a default forecast with current price if available
+                default_price = current_prices.get(ticker, 100.0)
+                forecasts.append(self._default_forecast(ticker, default_price))
                 risk_scores.append(2)  # Yellow risk
         
         # Calculate overall portfolio risk
@@ -59,6 +67,7 @@ class ForecastService:
     def _forecast_single_ticker(
         self,
         ticker: str,
+        current_price: float,
         historical_prices: List[float]
     ) -> TickerForecast:
         """
@@ -66,20 +75,29 @@ class ForecastService:
         
         Args:
             ticker: Ticker symbol
+            current_price: Current stock price from real-time data
             historical_prices: List of historical prices
             
         Returns:
             TickerForecast object
         """
-        logger.info(f"Forecasting {ticker} with {len(historical_prices)} data points")
+        logger.info(f"Forecasting {ticker} at ${current_price:.2f} with {len(historical_prices)} data points")
+        
+        # If no current price provided, try to use last historical price
+        if current_price == 0.0 and len(historical_prices) > 0:
+            current_price = float(historical_prices[-1])
+            logger.warning(f"Using last historical price for {ticker}: ${current_price:.2f}")
+        
+        if current_price == 0.0:
+            logger.warning(f"No price data for {ticker}, using default forecast")
+            return self._default_forecast(ticker, 100.0)
         
         if len(historical_prices) < 2:
-            logger.warning(f"Insufficient data for {ticker}, using default forecast")
-            return self._default_forecast(ticker)
+            logger.warning(f"Insufficient historical data for {ticker}, using simple forecast")
+            return self._default_forecast(ticker, current_price)
         
         # Convert to numpy array
         prices = np.array(historical_prices)
-        current_price = float(prices[-1])
         
         # Step 1: Calculate returns
         returns = self.garch_model.calculate_returns(prices)
@@ -93,9 +111,9 @@ class ForecastService:
         # Step 3: Estimate drift
         drift = self.garch_model.estimate_drift(returns)
         
-        # Step 4: Run Monte Carlo simulation
+        # Step 4: Run Monte Carlo simulation using CURRENT PRICE (not historical)
         simulated_prices = self.monte_carlo.simulate_paths(
-            current_price=current_price,
+            current_price=current_price,  # Use real-time price
             drift=drift,
             volatility=volatility
         )

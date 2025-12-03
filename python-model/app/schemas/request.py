@@ -3,6 +3,7 @@ from typing import List, Dict, Optional
 
 class ForecastRequest(BaseModel):
     tickers: List[str] = Field(..., min_items=1, max_items=50)
+    currentPrices: Dict[str, float] = Field(default_factory=dict)
     historicalData: Dict[str, List[float]] = Field(default_factory=dict)
 
 class Percentiles(BaseModel):

@@ -76,8 +76,15 @@ func (o *ForecastOrchestrator) GenerateForecast(ctx context.Context, req models.
 	}
 
 	// Step 3: Call Python forecasting service
+	// Extract current prices from market data
+	currentPrices := make(map[string]float64)
+	for symbol, data := range marketDataMap {
+		currentPrices[symbol] = data.Price
+	}
+
 	pythonReq := models.PythonForecastRequest{
 		Tickers:        req.Tickers,
+		CurrentPrices:  currentPrices,
 		HistoricalData: historicalData,
 	}
 

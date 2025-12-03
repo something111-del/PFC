@@ -56,6 +56,7 @@ type TickerData struct {
 // PythonForecastRequest represents request to Python service
 type PythonForecastRequest struct {
 	Tickers        []string             `json:"tickers"`
+	CurrentPrices  map[string]float64   `json:"currentPrices"`
 	HistoricalData map[string][]float64 `json:"historicalData"`
 }
 

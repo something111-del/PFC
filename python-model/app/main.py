@@ -61,6 +61,7 @@ async def predict(request: ForecastRequest):
         # Generate forecasts
         result = forecast_service.generate_forecast(
             tickers=request.tickers,
+            current_prices=request.currentPrices,
             historical_data=request.historicalData
         )
         
