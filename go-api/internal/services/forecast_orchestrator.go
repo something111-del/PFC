@@ -62,7 +62,7 @@ func (o *ForecastOrchestrator) GenerateForecast(ctx context.Context, req models.
 
 	for _, ticker := range req.Tickers {
 		go func(symbol string) {
-			data, err := o.marketData.GetHistoricalData(ctx, symbol, 30)
+			data, err := o.marketData.GetHistoricalData(ctx, symbol, 60) // Increased to 60 days
 			histCh <- histResult{symbol, data, err}
 		}(ticker)
 	}

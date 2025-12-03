@@ -27,7 +27,9 @@ class GARCHModel:
             if len(returns) < 30:
                 # Fallback to simple standard deviation if not enough data
                 logger.warning("Insufficient data for GARCH, using simple volatility")
-                return np.std(returns) * np.sqrt(252)  # Annualized
+                simple_vol = np.std(returns) * np.sqrt(252)
+                # Ensure minimum volatility of 10% annualized
+                return max(simple_vol, 0.10)
             
             # Scale returns to percentage
             returns_pct = returns * 100
@@ -50,13 +52,17 @@ class GARCHModel:
             # Convert back to decimal and annualize
             volatility_annual = (volatility / 100) * np.sqrt(252)
             
+            # Apply minimum volatility floor of 5% and maximum of 100%
+            volatility_annual = np.clip(volatility_annual, 0.05, 1.0)
+            
             logger.info(f"GARCH volatility estimated: {volatility_annual:.4f}")
             return volatility_annual
             
         except Exception as e:
             logger.error(f"GARCH estimation failed: {str(e)}")
-            # Fallback to simple volatility
-            return np.std(returns) * np.sqrt(252)
+            # Fallback to simple volatility with minimum floor
+            simple_vol = np.std(returns) * np.sqrt(252)
+            return max(simple_vol, 0.15)  # 15% minimum for fallback
     
     def calculate_returns(self, prices: np.ndarray) -> np.ndarray:
         """
@@ -74,12 +80,13 @@ class GARCHModel:
         returns = np.diff(np.log(prices))
         return returns
     
-    def estimate_drift(self, returns: np.ndarray) -> float:
+    def estimate_drift(self, returns: np.ndarray, use_exponential_weighting: bool = True) -> float:
         """
-        Estimate drift (expected return)
+        Estimate drift (expected return) with exponential weighting
         
         Args:
             returns: Array of historical returns
+            use_exponential_weighting: If True, recent returns get more weight
             
         Returns:
             Annualized drift
@@ -87,10 +94,22 @@ class GARCHModel:
         if len(returns) == 0:
             return 0.0
         
-        # Mean return
-        mean_return = np.mean(returns)
+        if use_exponential_weighting and len(returns) > 5:
+            # Exponentially weighted mean (recent data matters more)
+            # Decay factor: 0.94 means yesterday has 94% weight of today
+            weights = np.exp(np.linspace(-1, 0, len(returns)))
+            weights = weights / weights.sum()
+            mean_return = np.average(returns, weights=weights)
+        else:
+            # Simple mean return
+            mean_return = np.mean(returns)
         
         # Annualize (252 trading days)
         drift_annual = mean_return * 252
+        
+        # Clip extreme drifts to realistic range (-50% to +100% annually)
+        drift_annual = np.clip(drift_annual, -0.50, 1.0)
+        
+        logger.info(f"Estimated drift: {drift_annual:.4f} ({drift_annual*100:.2f}% annually)")
         
         return drift_annual
