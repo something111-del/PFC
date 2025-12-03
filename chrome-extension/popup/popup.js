@@ -67,7 +67,7 @@ async function scanCurrentTab() {
     }
 }
 
-async function fetchForecast(tickers, portfolio = []) {
+async function fetchForecast(tickers, portfolio = [], currentPrice = 0) {
     showView('loading');
 
     try {
@@ -81,6 +81,18 @@ async function fetchForecast(tickers, portfolio = []) {
         if (!response.ok) throw new Error('API request failed');
 
         const data = await response.json();
+
+        // If we have a detected price from the page, override the API's current value if it's 0
+        if (currentPrice > 0 && (data.currentValue === 0 || !data.currentValue)) {
+            data.currentValue = currentPrice;
+            // Also adjust expected value relative to the detected price if API returned 0
+            if (data.expectedValue === 0) {
+                data.expectedValue = currentPrice; // Flat line fallback
+                data.percentiles.p5 = currentPrice * 0.95;
+                data.percentiles.p50 = currentPrice;
+                data.percentiles.p95 = currentPrice * 1.05;
+            }
+        }
 
         // Cache result
         chrome.storage.local.set({ lastForecast: data });
@@ -115,13 +127,16 @@ function showResults(data) {
         const el = document.createElement('div');
         el.className = 'ticker-item';
 
-        const change = ((ticker.forecast.p50 - ticker.currentPrice) / ticker.currentPrice) * 100;
+        // Use ticker current price if available, otherwise fallback
+        const price = ticker.currentPrice > 0 ? ticker.currentPrice : data.currentValue;
+
+        const change = ((ticker.forecast.p50 - price) / price) * 100;
         const changeClass = change >= 0 ? 'positive' : 'negative';
 
         el.innerHTML = `
             <div class="ticker-info">
                 <span class="ticker-symbol">${ticker.symbol}</span>
-                <span class="ticker-price">${formatCurrency(ticker.currentPrice)}</span>
+                <span class="ticker-price">${formatCurrency(price)}</span>
             </div>
             <div class="ticker-forecast">
                 <div class="forecast-change ${changeClass}">
@@ -146,9 +161,13 @@ function renderChart(data) {
     // Generate hourly labels
     const labels = Array.from({ length: 24 }, (_, i) => `${i + 1}h`);
 
-    // Create datasets from simulation paths (simplified for visualization)
-    // In a real app, we'd pass the full path data
-    const currentVal = data.currentValue || 100; // Normalize to 100 if no portfolio value
+    // Use the actual current value from data (which we fixed above)
+    const currentVal = data.currentValue;
+
+    // If expected value is 0, it means API failed to predict, so just show flat line
+    const expectedVal = data.currentValue > 0 && data.expectedValue === 0 ? data.currentValue : data.expectedValue;
+    const p95 = data.currentValue > 0 && data.percentiles.p95 === 0 ? currentVal * 1.05 : data.percentiles.p95;
+    const p5 = data.currentValue > 0 && data.percentiles.p5 === 0 ? currentVal * 0.95 : data.percentiles.p5;
 
     chartInstance = new Chart(ctx, {
         type: 'line',
@@ -156,14 +175,14 @@ function renderChart(data) {
             labels: labels,
             datasets: [{
                 label: 'Expected',
-                data: generatePath(currentVal, data.expectedValue),
+                data: generatePath(currentVal, expectedVal),
                 borderColor: '#2563eb',
                 borderWidth: 2,
                 tension: 0.4,
                 pointRadius: 0
             }, {
                 label: 'Best Case (95%)',
-                data: generatePath(currentVal, data.percentiles.p95),
+                data: generatePath(currentVal, p95),
                 borderColor: '#22c55e',
                 borderWidth: 1,
                 borderDash: [5, 5],
@@ -171,7 +190,7 @@ function renderChart(data) {
                 pointRadius: 0
             }, {
                 label: 'Worst Case (5%)',
-                data: generatePath(currentVal, data.percentiles.p5),
+                data: generatePath(currentVal, p5),
                 borderColor: '#ef4444',
                 borderWidth: 1,
                 borderDash: [5, 5],

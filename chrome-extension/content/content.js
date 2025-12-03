@@ -58,51 +58,77 @@ function detectPlatform() {
 // Extract tickers from page
 function extractTickers() {
     const platform = detectPlatform();
+    const url = window.location.href;
 
-    if (!platform) {
-        console.log('[PFC] Platform not supported');
-        return { platform: 'unknown', tickers: [], portfolio: [] };
-    }
+    // Strategy 1: Check URL for ticker (e.g. robinhood.com/stocks/AAPL)
+    const urlTickerMatch = url.match(/\/stocks\/([A-Z]+)/i) || url.match(/symbol=([A-Z]+)/i);
+    let urlTicker = urlTickerMatch ? urlTickerMatch[1].toUpperCase() : null;
 
-    console.log(`[PFC] Detected platform: ${platform.name}`);
-
-    const tickerElements = document.querySelectorAll(platform.tickerSelector);
     const tickers = new Set();
     const portfolio = [];
+    let detectedPrice = 0;
 
-    tickerElements.forEach(element => {
-        let ticker = element.textContent.trim().toUpperCase();
+    // If we found a ticker in URL, add it immediately
+    if (urlTicker) {
+        console.log(`[PFC] Found ticker in URL: ${urlTicker}`);
+        tickers.add(urlTicker);
 
-        // Clean ticker symbol (remove $, spaces, etc.)
-        ticker = ticker.replace(/[$\s]/g, '');
+        // Try to find the price for this specific ticker on the page
+        if (platform) {
+            const priceEl = document.querySelector(platform.priceSelector);
+            if (priceEl) {
+                const priceText = priceEl.textContent.replace(/[^0-9.]/g, '');
+                detectedPrice = parseFloat(priceText);
+                console.log(`[PFC] Found price on page: ${detectedPrice}`);
+            }
+        }
+    }
 
-        // Validate ticker (1-5 uppercase letters)
-        if (/^[A-Z]{1,5}$/.test(ticker)) {
-            tickers.add(ticker);
+    if (platform) {
+        console.log(`[PFC] Scanning DOM for platform: ${platform.name}`);
+        const tickerElements = document.querySelectorAll(platform.tickerSelector);
 
-            // Try to find associated shares and price
-            const row = element.closest('tr, div[class*="row"], li');
-            if (row) {
-                const priceEl = row.querySelector(platform.priceSelector);
-                const sharesEl = row.querySelector(platform.sharesSelector);
+        tickerElements.forEach(element => {
+            let ticker = element.textContent.trim().toUpperCase();
+            ticker = ticker.replace(/[$\s]/g, ''); // Clean ticker
 
-                if (sharesEl) {
-                    const shares = parseFloat(sharesEl.textContent.replace(/[^0-9.]/g, ''));
-                    if (!isNaN(shares) && shares > 0) {
-                        portfolio.push({
-                            ticker: ticker,
-                            shares: shares
-                        });
+            if (/^[A-Z]{1,5}$/.test(ticker)) {
+                tickers.add(ticker);
+
+                // Try to find associated shares and price
+                const row = element.closest('tr, div[class*="row"], li');
+                if (row) {
+                    const priceEl = row.querySelector(platform.priceSelector);
+                    const sharesEl = row.querySelector(platform.sharesSelector);
+
+                    if (sharesEl) {
+                        const shares = parseFloat(sharesEl.textContent.replace(/[^0-9.]/g, ''));
+                        if (!isNaN(shares) && shares > 0) {
+                            portfolio.push({
+                                ticker: ticker,
+                                shares: shares
+                            });
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
+
+    // If we have a URL ticker but no portfolio shares, assume 1 share for visualization
+    if (urlTicker && portfolio.length === 0 && detectedPrice > 0) {
+        portfolio.push({
+            ticker: urlTicker,
+            shares: 1,
+            price: detectedPrice // Pass this to popup
+        });
+    }
 
     const result = {
-        platform: platform.name,
+        platform: platform ? platform.name : 'Unknown',
         tickers: Array.from(tickers),
-        portfolio: portfolio.length > 0 ? portfolio : null
+        portfolio: portfolio.length > 0 ? portfolio : null,
+        currentPrice: detectedPrice // Send detected price to popup
     };
 
     console.log('[PFC] Extracted data:', result);
