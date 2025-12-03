@@ -6,17 +6,8 @@
     "permissions": [
         "activeTab",
         "storage",
-        "alarms"
-    ],
-    "host_permissions": [
-        "https://robinhood.com/*",
-        "https://www.robinhood.com/*",
-        "https://webull.com/*",
-        "https://www.webull.com/*",
-        "https://www.tdameritrade.com/*",
-        "https://us.etrade.com/*",
-        "https://www.fidelity.com/*",
-        "https://www.schwab.com/*"
+        "alarms",
+        "scripting"
     ],
     "action": {
         "default_popup": "popup/popup.html",
@@ -31,27 +22,6 @@
         "48": "assets/icon48.png",
         "128": "assets/icon128.png"
     },
-    "content_scripts": [
-        {
-            "matches": [
-                "https://robinhood.com/*",
-                "https://www.robinhood.com/*",
-                "https://webull.com/*",
-                "https://www.webull.com/*",
-                "https://www.tdameritrade.com/*",
-                "https://us.etrade.com/*",
-                "https://www.fidelity.com/*",
-                "https://www.schwab.com/*"
-            ],
-            "js": [
-                "content/content.js"
-            ],
-            "css": [
-                "content/content.css"
-            ],
-            "run_at": "document_idle"
-        }
-    ],
     "background": {
         "service_worker": "background/service-worker.js"
     }

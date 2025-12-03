@@ -81,10 +81,26 @@ async function scanCurrentTab() {
 
         if (!tab) throw new Error('No active tab');
 
+        // Inject content script dynamically since we removed content_scripts from manifest
+        try {
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ['content/content.js']
+            });
+            // Also inject CSS
+            await chrome.scripting.insertCSS({
+                target: { tabId: tab.id },
+                files: ['content/content.css']
+            });
+        } catch (e) {
+            console.log('Script injection failed (maybe restricted page):', e);
+        }
+
         // Send message to content script
         chrome.tabs.sendMessage(tab.id, { action: 'extractTickers' }, (response) => {
             if (chrome.runtime.lastError) {
-                // Content script might not be loaded (e.g. restricted page)
+                // Content script might not be loaded or page is restricted
+                console.log('Message failed:', chrome.runtime.lastError);
                 showView('empty');
                 return;
             }
