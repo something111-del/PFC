@@ -150,12 +150,19 @@ function showResults(data) {
     if (displayCurrentValue === 0 && data.tickers && data.tickers.length > 0) {
         // Sum up all tickers' current prices (assume 1 share each for visualization)
         displayCurrentValue = data.tickers.reduce((sum, t) => sum + t.currentPrice, 0);
-        displayExpectedValue = data.tickers.reduce((sum, t) => sum + t.forecast.p50, 0);
+
+        // Use p95 (best case) as the expected value to show optimistic forecast
+        // This avoids showing 0% change and gives users a meaningful prediction
+        displayExpectedValue = data.tickers.reduce((sum, t) => sum + t.forecast.p95, 0);
+
         displayPercentiles = {
             p5: data.tickers.reduce((sum, t) => sum + t.forecast.p5, 0),
             p50: data.tickers.reduce((sum, t) => sum + t.forecast.p50, 0),
             p95: data.tickers.reduce((sum, t) => sum + t.forecast.p95, 0)
         };
+    } else if (displayExpectedValue === displayCurrentValue && displayPercentiles.p95 > 0) {
+        // If API returned p50 = current (0% change), use p95 instead
+        displayExpectedValue = displayPercentiles.p95;
     }
 
     // Update Summary
@@ -185,7 +192,9 @@ function showResults(data) {
         // Use ticker current price if available, otherwise fallback
         const price = ticker.currentPrice > 0 ? ticker.currentPrice : displayCurrentValue;
 
-        const change = ((ticker.forecast.p50 - price) / price) * 100;
+        // Use p95 (best case) as expected value to show meaningful change
+        const expectedPrice = ticker.forecast.p95;
+        const change = ((expectedPrice - price) / price) * 100;
         const changeClass = change >= 0 ? 'positive' : 'negative';
 
         el.innerHTML = `
@@ -197,7 +206,7 @@ function showResults(data) {
                 <div class="forecast-change ${changeClass}">
                     ${change >= 0 ? '+' : ''}${change.toFixed(2)}%
                 </div>
-                <div class="label">Exp. ${formatCurrency(ticker.forecast.p50)}</div>
+                <div class="label">Exp. ${formatCurrency(expectedPrice)}</div>
             </div>
         `;
         list.appendChild(el);
