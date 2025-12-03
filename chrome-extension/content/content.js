@@ -144,36 +144,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
 });
 
-// Store extracted data for quick access
-let cachedData = null;
-let cacheTime = 0;
-
-function updateCache() {
-    const now = Date.now();
-    if (!cachedData || (now - cacheTime) > 5000) { // Cache for 5 seconds
-        cachedData = extractTickers();
-        cacheTime = now;
-
-        // Store in chrome.storage for popup access
-        chrome.storage.local.set({ portfolioData: cachedData });
-    }
-}
-
-// Update cache when page loads and on changes
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', updateCache);
-} else {
-    updateCache();
-}
-
-// Watch for DOM changes (portfolio updates)
-const observer = new MutationObserver(() => {
-    updateCache();
-});
-
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
-
 console.log('[PFC] Content script initialized');
