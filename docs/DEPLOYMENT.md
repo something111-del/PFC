@@ -2,16 +2,16 @@
 
 ## 1. Google Cloud Setup
 
-Ensure you have the following resources created:
-- Project ID: `pfc-portfolio-forecast`
-- Artifact Registry: `pfc-services`
+ the following resources created:
+- Project ID: `project_id`
+- Artifact Registry: ``
 - Secret Manager: `alpha-vantage-key`
-- Service Account: `github-actions@pfc-portfolio-forecast.iam.gserviceaccount.com`
+- Service Account: `github-actions@project_id.iam.gserviceaccount.com`
 
 ## 2. GitHub Secrets
 
-Add the following secrets to your repository:
-- `GCP_PROJECT_ID`: `pfc-portfolio-forecast`
+Add the following secrets to repository:
+- `GCP_PROJECT_ID`: `project_id`
 - `GCP_REGION`: `us-central1`
 - `GCP_SA_KEY`: (JSON key content)
 
