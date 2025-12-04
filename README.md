@@ -149,7 +149,7 @@ Result for AAPL: RED (28% volatility exceeds threshold)
 
 ### Infrastructure
 - **Cloud Platform**: Google Cloud Run (serverless containers)
-- **Database**: Firestore (NoSQL document store with B+ Tree indexing)
+- **Database**: Firestore (NoSQL document store)
 - **API Service**: Alpha Vantage (market data)
 - **CI/CD**: GitHub Actions
 - **Container Registry**: Artifact Registry
