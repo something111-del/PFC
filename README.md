@@ -1,6 +1,9 @@
 # PFC - Portfolio Forecast Chrome Extension
 
 A real-time portfolio forecasting system that analyzes stock holdings and predicts 24-hour price movements using GARCH volatility modeling and Monte Carlo simulation. Built as a Chrome extension with a microservices architecture deployed on Google Cloud.
+## ([Add To Chrome](https://chromewebstore.google.com/detail/fjekmggfnfjpilbgagjkalcmiobegjfe?utm_source=item-share-cb))
+- GitHub repository for CI/CD))
+- GitHub repository for CI/CD
 
 ## 🎯 Core Capabilities
 
