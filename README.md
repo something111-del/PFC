@@ -5,7 +5,7 @@ A real-time portfolio forecasting system that analyzes stock holdings and predic
 - GitHub repository for CI/CD))
 - GitHub repository for CI/CD
 
-## 🎯 Core Capabilities
+##  Core Capabilities
 
 - **Automated Detection**: Scans portfolio holdings on major brokerage sites (Robinhood, Webull, TD Ameritrade, E*TRADE, Fidelity, Charles Schwab)
 - **Advanced Forecasting**: Generates 24-hour price predictions using GARCH(1,1) volatility estimation and 10,000-path Monte Carlo simulations
@@ -15,7 +15,7 @@ A real-time portfolio forecasting system that analyzes stock holdings and predic
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ![PFC Architecture](docs/architecture_diagram.png)
 
@@ -43,7 +43,7 @@ The system follows a microservices architecture with clear separation of concern
 
 ---
 
-## 🧮 How Forecasting Works
+## How Forecasting Works
 
 ### Example: Forecasting AAPL
 
@@ -128,7 +128,7 @@ Result for AAPL: RED (28% volatility exceeds threshold)
 
 ---
 
-## 🔧 Tech Stack
+##  Tech Stack
 
 ### Languages & Frameworks
 - **Frontend**: JavaScript (Chrome Extension APIs, Chart.js)
@@ -180,7 +180,7 @@ Result for AAPL: RED (28% volatility exceeds threshold)
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Google Cloud Project with Cloud Run enabled
@@ -228,7 +228,7 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for detailed configuration.
 
 ---
 
-## 📦 Chrome Web Store Packaging
+## Chrome Web Store Packaging
 
 Generate a Web Store-ready ZIP:
 ```bash
@@ -273,7 +273,7 @@ PFC/
 
 ---
 
-## 🎓 Technical Highlights
+## Technical Highlights
 
 ### Why This Architecture?
 
@@ -301,13 +301,13 @@ PFC/
 
 ---
 
-## 📄 License
+## License
 
 MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Areas for improvement:
 - Add support for options/crypto forecasting
